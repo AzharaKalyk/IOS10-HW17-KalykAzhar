@@ -3,6 +3,9 @@ import UIKit
 class ViewController: UIViewController {
     
     // MARK: - Elements
+    private var bruteForceQueue: DispatchQueue?
+    private var isBruteForceRunning = false
+    private var isBackgroundDark = false
     
     private lazy var textField: UITextField = {
         let textField = UITextField()
@@ -36,6 +39,27 @@ class ViewController: UIViewController {
         return button
     }()
     
+    private lazy var buttonRandomPassword: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Random Password", for: .normal)
+        button.tintColor = .black
+        button.backgroundColor = UIColor(red: 0.75, green: 0.85, blue: 0.86, alpha: 1.00)
+        button.layer.cornerRadius = 15
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.addTarget(self, action: #selector(buttonRandomPasswordTapped), for: .touchUpInside)
+        return button
+    }()
+    
+    private lazy var buttonBackground: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Color", for: .normal)
+        button.tintColor = .black
+        button.backgroundColor = UIColor(red: 0.75, green: 0.85, blue: 0.86, alpha: 1.00)
+        button.layer.cornerRadius = 15
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.addTarget(self, action: #selector(buttonToggleBackgroundTapped), for: .touchUpInside)
+        return button
+    }()
     
     private lazy var indicator: UIActivityIndicatorView = {
         let indicator = UIActivityIndicatorView()
@@ -43,8 +67,6 @@ class ViewController: UIViewController {
         indicator.translatesAutoresizingMaskIntoConstraints = false
         return indicator
     }()
-    
-    private var isBruteForceRunning = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -60,37 +82,45 @@ class ViewController: UIViewController {
     }
     
     private func setupHierarchy() {
-        view.addSubview(textField)
+        
         view.addSubview(label)
-        view.addSubview(button)
+        view.addSubview(textField)
         view.addSubview(indicator)
+        view.addSubview(button)
+        view.addSubview(buttonRandomPassword)
+        view.addSubview(buttonBackground)
     }
     
     private func setupLayout() {
         
         NSLayoutConstraint.activate([
-            button.topAnchor.constraint(equalTo: view.topAnchor, constant: 450),
-            button.rightAnchor.constraint(equalTo: view.rightAnchor, constant: -100),
-            button.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -350),
-            button.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 100),
-            button.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            
-            textField.topAnchor.constraint(equalTo: view.topAnchor, constant: 350),
-            textField.rightAnchor.constraint(equalTo: view.rightAnchor, constant: -80),
-            textField.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -450),
-            textField.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 80),
-            textField.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            
-            label.topAnchor.constraint(equalTo: view.topAnchor, constant: 250),
-            label.rightAnchor.constraint(equalTo: view.rightAnchor, constant: -100),
-            label.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -450),
-            label.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 120),
+            label.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -100),
             label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.widthAnchor.constraint(equalToConstant: 200),
+            label.heightAnchor.constraint(equalToConstant: 50),
             
-            indicator.topAnchor.constraint(equalTo: view.topAnchor, constant: 395),
-            indicator.rightAnchor.constraint(equalTo: view.rightAnchor, constant: -80),
-            indicator.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -405),
-            indicator.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 80),
+            textField.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 20),
+            textField.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            textField.widthAnchor.constraint(equalToConstant: 200),
+            textField.heightAnchor.constraint(equalToConstant: 50),
+            
+            button.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 20),
+            button.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            button.widthAnchor.constraint(equalToConstant: 200),
+            button.heightAnchor.constraint(equalToConstant: 50),
+            
+            buttonRandomPassword.topAnchor.constraint(equalTo: button.bottomAnchor, constant: 20),
+            buttonRandomPassword.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            buttonRandomPassword.widthAnchor.constraint(equalToConstant: 200),
+            buttonRandomPassword.heightAnchor.constraint(equalToConstant: 50),
+            
+            buttonBackground.topAnchor.constraint(equalTo: buttonRandomPassword.bottomAnchor, constant: 70),
+            buttonBackground.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            buttonBackground.widthAnchor.constraint(equalToConstant: 200),
+            buttonBackground.heightAnchor.constraint(equalToConstant: 50),
+            
+            indicator.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 20),
+            indicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
         ])
     }
     
@@ -105,8 +135,31 @@ class ViewController: UIViewController {
                 alert(message: "Введите пароль")
                 return
             }
+            if let currentQueue = bruteForceQueue {
+                currentQueue.async {
+                    self.stopBruteForce()
+                }
+            }
             startBruteForce(passwordToUnlock: passwordToUnlock)
         }
+    }
+    
+    @objc private func buttonRandomPasswordTapped() {
+        let randomPassword = generateRandomPassword(length: 1)
+        textField.text = randomPassword
+    }
+    
+    @objc private func buttonToggleBackgroundTapped() {
+        isBackgroundDark.toggle()
+        view.backgroundColor = isBackgroundDark ? UIColor(red: 0.68, green: 0.69, blue: 0.72, alpha: 1.00) : UIColor(red: 0.76, green: 0.88, blue: 0.77, alpha: 1.00)
+    }
+    
+    // MARK: - FancActions
+    
+    private func generateRandomPassword(length: Int) -> String {
+        let allowedCharacters = String().printable
+        let randomPassword = String((0..<length).map { _ in allowedCharacters.randomElement() ?? " " })
+        return randomPassword
     }
     
     private func alert(message: String) {
@@ -118,63 +171,61 @@ class ViewController: UIViewController {
     
     private func stopBruteForce() {
         isBruteForceRunning = false
-        label.text = "Подбор остановлен"
+        textField.isSecureTextEntry = false
         indicator.stopAnimating()
+        bruteForceQueue = nil
     }
     
     private func startBruteForce(passwordToUnlock: String) {
+        stopBruteForce()
         isBruteForceRunning = true
         textField.isSecureTextEntry = true
         label.text = ""
         indicator.startAnimating()
         
-        DispatchQueue.global().async {
-            let ALLOWED_CHARACTERS = String().printable.map { String($0) }
-            var password: String = ""
+        bruteForceQueue = DispatchQueue(label: "com.myapp.bruteforce", qos: .background)
+        bruteForceQueue?.async { [weak self] in
+            guard let self = self else { return }
             
-            while password != passwordToUnlock && self.isBruteForceRunning {
-                password = self.generateBruteForce(password, fromArray: ALLOWED_CHARACTERS, length: 4)
-                DispatchQueue.main.async {
-                    self.label.text = password
+            let ALLOWED_CHARACTERS = String().printable.map { String($0) }
+            let passwordLength = passwordToUnlock.count
+            
+            while self.isBruteForceRunning {
+                for length in 1...passwordLength {
+                    self.recursiveBruteForce(passwordToUnlock: passwordToUnlock, allowedCharacters: ALLOWED_CHARACTERS, currentPassword: "", targetLength: length)
                 }
             }
             
             DispatchQueue.main.async {
-                if password == passwordToUnlock {
-                    self.label.text = "Пароль взломан: \(password)"
-                    self.textField.isSecureTextEntry = false
-                } else {
-                    self.label.text = "Пароль не взломан"
-                }
-                self.indicator.stopAnimating()
-                self.isBruteForceRunning = false
+                self.stopBruteForce()
+                self.label.text = "Пароль не взломан"
             }
         }
     }
-    
-    func indexOf(character: Character, _ array: [String]) -> Int {
-        return array.firstIndex(of: String(character)) ?? 0
-    }
-    
-    func characterAt(index: Int, _ array: [String]) -> Character {
-        return index < array.count ? Character(array[index])
-        : Character("")
-    }
-    
-    func generateBruteForce(_ string: String, fromArray array: [String], length: Int) -> String {
-        var str: String = string
         
-        if str.count < length {
-            str.append(characterAt(index: 0, array))
-        } else {
-            str.replace(at: str.count - 1,
-                        with: characterAt(index: (indexOf(character: str.last!, array) + 1) % array.count, array))
-            
-            if indexOf(character: str.last!, array) == 0 {
-                str = String(generateBruteForce(String(str.dropLast()), fromArray: array, length: length - 1)) + String(str.last!)
+    private func recursiveBruteForce(passwordToUnlock: String, allowedCharacters: [String], currentPassword: String, targetLength: Int) {
+        if isBruteForceRunning {
+            if currentPassword.count == targetLength {
+                if currentPassword == passwordToUnlock {
+                    DispatchQueue.main.async {
+                        self.stopBruteForce()
+                        self.label.text = "Пароль взломан: \(currentPassword)"
+                        self.textField.isSecureTextEntry = false
+                    }
+                }
+            } else {
+                for character in allowedCharacters {
+                    let newPassword = currentPassword + character
+                    
+                    DispatchQueue.main.async {
+                        self.label.text = "\(newPassword)"
+                    }
+                    
+                    DispatchQueue.global().asyncAfter(deadline: .now() + 0.1) {
+                        self.recursiveBruteForce(passwordToUnlock: passwordToUnlock, allowedCharacters: allowedCharacters, currentPassword: newPassword, targetLength: targetLength)
+                    }
+                }
             }
         }
-        return str
     }
 }
-
