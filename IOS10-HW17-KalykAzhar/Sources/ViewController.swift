@@ -190,42 +190,50 @@ class ViewController: UIViewController {
             let ALLOWED_CHARACTERS = String().printable.map { String($0) }
             let passwordLength = passwordToUnlock.count
             
-            while self.isBruteForceRunning {
-                for length in 1...passwordLength {
-                    self.recursiveBruteForce(passwordToUnlock: passwordToUnlock, allowedCharacters: ALLOWED_CHARACTERS, currentPassword: "", targetLength: length)
+            func bruteForceHelper(currentPassword: String, depth: Int) {
+                if self.isBruteForceRunning {
+                    if currentPassword == passwordToUnlock {
+                        DispatchQueue.main.async {
+                            self.stopBruteForce()
+                            self.label.text = "Пароль взломан: \(currentPassword)"
+                            self.textField.isSecureTextEntry = false
+                        }
+                        return
+                    }
+                    if depth > passwordLength {
+                        return
+                    }
+                    for character in ALLOWED_CHARACTERS {
+                        bruteForceHelper(currentPassword: currentPassword + character, depth: depth + 1)
+                    }
                 }
             }
             
-            DispatchQueue.main.async {
-                self.stopBruteForce()
-                self.label.text = "Пароль не взломан"
-            }
+            bruteForceHelper(currentPassword: "", depth: 1)
         }
     }
-        
-    private func recursiveBruteForce(passwordToUnlock: String, allowedCharacters: [String], currentPassword: String, targetLength: Int) {
-        if isBruteForceRunning {
-            if currentPassword.count == targetLength {
-                if currentPassword == passwordToUnlock {
-                    DispatchQueue.main.async {
-                        self.stopBruteForce()
-                        self.label.text = "Пароль взломан: \(currentPassword)"
-                        self.textField.isSecureTextEntry = false
-                    }
-                }
-            } else {
-                for character in allowedCharacters {
-                    let newPassword = currentPassword + character
-                    
-                    DispatchQueue.main.async {
-                        self.label.text = "\(newPassword)"
-                    }
-                    
-                    DispatchQueue.global().asyncAfter(deadline: .now() + 0.1) {
-                        self.recursiveBruteForce(passwordToUnlock: passwordToUnlock, allowedCharacters: allowedCharacters, currentPassword: newPassword, targetLength: targetLength)
-                    }
-                }
+    
+    private func recursiveBruteForce(passwordToUnlock: String, allowedCharacters: [String], currentPassword: String) {
+        if currentPassword == passwordToUnlock {
+            DispatchQueue.main.async {
+                self.stopBruteForce()
+                self.label.text = "Пароль взломан: \(currentPassword)"
+                self.textField.isSecureTextEntry = false
             }
+            return
+        }
+        
+        for character in allowedCharacters {
+            let newPassword = currentPassword + character
+            
+            DispatchQueue.main.async {
+                self.label.text = "\(newPassword)"
+            }
+            
+            recursiveBruteForce(passwordToUnlock: passwordToUnlock, allowedCharacters: allowedCharacters, currentPassword: newPassword)
         }
     }
 }
+
+        
+
